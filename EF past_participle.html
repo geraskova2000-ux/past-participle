@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Past Participle Game</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(255,255,255,0.95), transparent 34%),
+        linear-gradient(135deg, #f8efff 0%, #ead9ff 45%, #f7e8f3 100%);
+      color: #4d3568;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 22px;
+    }
+
+    .game-wrapper {
+      width: min(980px, 100%);
+      min-height: 620px;
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(14px);
+      border: 2px solid rgba(255, 255, 255, 0.8);
+      border-radius: 34px;
+      box-shadow: 0 22px 60px rgba(104, 67, 133, 0.20);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .decor-circle {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
+    .circle-one {
+      width: 160px;
+      height: 160px;
+      background: #d7b8ff;
+      top: -55px;
+      right: -40px;
+    }
+
+    .circle-two {
+      width: 120px;
+      height: 120px;
+      background: #ffd4ef;
+      bottom: 20px;
+      left: -35px;
+    }
+
+    .screen {
+      display: none;
+      min-height: 620px;
+      padding: 34px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .screen.active {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .start-screen,
+    .end-screen {
+      text-align: center;
+      align-items: center;
+      gap: 22px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(36px, 6vw, 64px);
+      line-height: 1;
+      color: #6b3fa0;
+      letter-spacing: -1px;
+    }
+
+    .subtitle {
+      max-width: 680px;
+      font-size: clamp(18px, 2.4vw, 24px);
+      line-height: 1.45;
+      color: #6c527d;
+      margin: 0;
+    }
+
+    .soft-card {
+      background: rgba(255, 255, 255, 0.68);
+      border: 1px solid rgba(138, 93, 174, 0.15);
+      border-radius: 28px;
+      padding: 22px;
+      box-shadow: 0 12px 30px rgba(124, 82, 160, 0.12);
+    }
+
+    .start-notes {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      width: min(760px, 100%);
+    }
+
+    .note {
+      min-height: 108px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 8px;
+      font-size: 17px;
+    }
+
+    .note strong {
+      display: block;
+      font-size: 21px;
+      color: #6d3fa5;
+    }
+
+    button {
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      transition: transform 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .main-button {
+      padding: 17px 34px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #8f5ed6, #c17deb);
+      color: white;
+      font-size: 23px;
+      font-weight: 800;
+      box-shadow: 0 12px 26px rgba(129, 75, 180, 0.30);
+    }
+
+    .secondary-button {
+      padding: 13px 23px;
+      border-radius: 18px;
+      background: #efe1ff;
+      color: #6b3fa0;
+      font-size: 18px;
+      font-weight: 700;
+      box-shadow: 0 8px 18px rgba(129, 75, 180, 0.14);
+    }
+
+    .game-screen {
+      justify-content: flex-start !important;
+      gap: 18px;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .progress-text,
+    .attempts-text {
+      font-size: 18px;
+      font-weight: 800;
+      color: #7852a4;
+      background: rgba(255, 255, 255, 0.62);
+      padding: 11px 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(145, 103, 188, 0.18);
+    }
+
+    .progress-line {
+      height: 12px;
+      width: 100%;
+      background: rgba(126, 83, 166, 0.13);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #9a6be0, #d58bf0);
+      border-radius: 999px;
+      transition: width 0.25s ease;
+    }
+
+    .question-card {
+      text-align: center;
+      padding: 28px 20px;
+      border-radius: 32px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(145, 103, 188, 0.18);
+      box-shadow: 0 14px 36px rgba(124, 82, 160, 0.13);
+    }
+
+    .task-label {
+      margin: 0 0 12px;
+      font-size: clamp(18px, 2.4vw, 24px);
+      color: #7b5a92;
+      font-weight: 700;
+    }
+
+    .base-verb {
+      display: inline-flex;
+      min-width: 210px;
+      justify-content: center;
+      align-items: center;
+      padding: 20px 38px;
+      border-radius: 28px;
+      background: linear-gradient(135deg, #f3e8ff, #fff0fa);
+      color: #5f2f91;
+      font-size: clamp(46px, 8vw, 78px);
+      font-weight: 900;
+      box-shadow: inset 0 -6px 0 rgba(133, 82, 181, 0.09);
+    }
+
+    .answer-area {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .answer-input {
+      width: 100%;
+      min-height: 66px;
+      border: 2px solid rgba(143, 94, 214, 0.25);
+      border-radius: 22px;
+      padding: 14px 20px;
+      font-size: 34px;
+      font-weight: 800;
+      text-align: center;
+      color: #5c3677;
+      outline: none;
+      background: rgba(255, 255, 255, 0.82);
+      box-shadow: 0 10px 22px rgba(124, 82, 160, 0.10);
+    }
+
+    .answer-input:focus {
+      border-color: #a46be3;
+    }
+
+    .message {
+      min-height: 36px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: 800;
+      color: #70469c;
+    }
+
+    .message.good {
+      color: #4d8c62;
+    }
+
+    .message.bad {
+      color: #b55b77;
+    }
+
+    .message.answer {
+      color: #7d43bd;
+    }
+
+    .keyboard {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+      margin-top: 4px;
+      padding: 18px;
+      border-radius: 28px;
+      background: rgba(255, 255, 255, 0.56);
+      border: 1px solid rgba(145, 103, 188, 0.15);
+    }
+
+    .keyboard-row {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .key {
+      min-width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: #f6edff;
+      color: #633a88;
+      font-size: 20px;
+      font-weight: 900;
+      box-shadow: 0 5px 0 rgba(111, 72, 145, 0.16), 0 8px 18px rgba(111, 72, 145, 0.09);
+      border: 1px solid rgba(143, 94, 214, 0.18);
+    }
+
+    .key.wide {
+      min-width: 92px;
+      padding: 0 16px;
+      font-size: 17px;
+    }
+
+    .key.enter {
+      min-width: 110px;
+      background: #e8d6ff;
+    }
+
+    .key.backspace {
+      min-width: 112px;
+      background: #ffe8f6;
+    }
+
+    .shake {
+      animation: shake 0.28s ease;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-7px); }
+      50% { transform: translateX(7px); }
+      75% { transform: translateX(-5px); }
+    }
+
+    .end-card {
+      width: min(720px, 100%);
+      text-align: left;
+    }
+
+    .end-title {
+      text-align: center;
+      margin: 0 0 10px;
+      font-size: clamp(32px, 5vw, 52px);
+      color: #6b3fa0;
+    }
+
+    .score {
+      text-align: center;
+      font-size: 24px;
+      font-weight: 900;
+      color: #6e4b8c;
+      margin: 0 0 20px;
+    }
+
+    .failed-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin: 16px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .failed-list li {
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: #f8edff;
+      color: #5f367d;
+      font-size: 20px;
+      font-weight: 800;
+      border: 1px solid rgba(143, 94, 214, 0.14);
+    }
+
+    .empty-result {
+      text-align: center;
+      font-size: 24px;
+      font-weight: 900;
+      color: #4d8c62;
+      margin: 18px 0;
+    }
+
+    .small-hint {
+      font-size: 16px;
+      color: #806393;
+      margin: 0;
+    }
+
+    @media (max-width: 760px) {
+      .screen {
+        padding: 22px;
+      }
+
+      .start-notes {
+        grid-template-columns: 1fr;
+      }
+
+      .answer-area {
+        grid-template-columns: 1fr;
+      }
+
+      .secondary-button {
+        width: 100%;
+      }
+
+      .keyboard {
+        padding: 12px;
+        gap: 8px;
+      }
+
+      .keyboard-row {
+        gap: 5px;
+      }
+
+      .key {
+        min-width: 30px;
+        height: 42px;
+        font-size: 16px;
+        border-radius: 11px;
+      }
+
+      .key.wide,
+      .key.enter,
+      .key.backspace {
+        min-width: 76px;
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="game-wrapper">
+    <div class="decor-circle circle-one"></div>
+    <div class="decor-circle circle-two"></div>
+
+    <section class="screen start-screen active" id="startScreen">
+      <h1>Past Participle</h1>
+      <p class="subtitle">Look at the base verb and type the Past Participle form.</p>
+
+      <div class="start-notes">
+        <div class="soft-card note">
+          <strong>2 attempts</strong>
+          Then the answer appears.
+        </div>
+        <div class="soft-card note">
+          <strong>2 ways</strong>
+          Use your keyboard or click the screen keyboard.
+        </div>
+        <div class="soft-card note">
+          <strong>Audio</strong>
+          Correct answers are pronounced by the browser.
+        </div>
+      </div>
+
+      <button class="main-button" id="startButton">Start game</button>
+      <p class="small-hint">Tip: turn your sound on before you start.</p>
+    </section>
+
+    <section class="screen game-screen" id="gameScreen">
+      <div class="top-bar">
+        <div class="progress-text" id="progressText">Word 1 / 20</div>
+        <div class="attempts-text" id="attemptsText">Attempts left: 2</div>
+      </div>
+
+      <div class="progress-line">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+
+      <div class="question-card">
+        <p class="task-label">Type the Past Participle form of:</p>
+        <div class="base-verb" id="baseVerb">see</div>
+      </div>
+
+      <div class="answer-area">
+        <input
+          class="answer-input"
+          id="answerInput"
+          type="text"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="none"
+          spellcheck="false"
+          placeholder="type here"
+        />
+        <button class="secondary-button" id="checkButton">Check</button>
+        <button class="secondary-button" id="clearButton">Clear</button>
+      </div>
+
+      <div class="message" id="message"></div>
+
+      <div class="keyboard" id="keyboard" aria-label="On-screen English keyboard"></div>
+    </section>
+
+    <section class="screen end-screen" id="endScreen">
+      <div class="soft-card end-card">
+        <h2 class="end-title">Game finished!</h2>
+        <p class="score" id="scoreText"></p>
+        <div id="failedBlock"></div>
+      </div>
+      <button class="main-button" id="restartButton">Play again</button>
+    </section>
+  </main>
+
+  <script>
+    const verbs = [
+      { base: "see", answer: "seen" },
+      { base: "read", answer: "read", speak: "red" },
+      { base: "wash", answer: "washed" },
+      { base: "do", answer: "done" },
+      { base: "be", answer: "been" },
+      { base: "eat", answer: "eaten" },
+      { base: "meet", answer: "met" },
+      { base: "forget", answer: "forgotten" },
+      { base: "wear", answer: "worn" },
+      { base: "speak", answer: "spoken" },
+      { base: "work", answer: "worked" },
+      { base: "leave", answer: "left" },
+      { base: "take", answer: "taken" },
+      { base: "call", answer: "called" },
+      { base: "win", answer: "won" },
+      { base: "break", answer: "broken" },
+      { base: "go", answer: "gone" },
+      { base: "fall", answer: "fallen" },
+      { base: "buy", answer: "bought" },
+      { base: "sing", answer: "sung" }
+    ];
+
+    const startScreen = document.getElementById("startScreen");
+    const gameScreen = document.getElementById("gameScreen");
+    const endScreen = document.getElementById("endScreen");
+
+    const startButton = document.getElementById("startButton");
+    const restartButton = document.getElementById("restartButton");
+    const baseVerb = document.getElementById("baseVerb");
+    const answerInput = document.getElementById("answerInput");
+    const checkButton = document.getElementById("checkButton");
+    const clearButton = document.getElementById("clearButton");
+    const message = document.getElementById("message");
+    const progressText = document.getElementById("progressText");
+    const attemptsText = document.getElementById("attemptsText");
+    const progressFill = document.getElementById("progressFill");
+    const keyboard = document.getElementById("keyboard");
+    const scoreText = document.getElementById("scoreText");
+    const failedBlock = document.getElementById("failedBlock");
+
+    let currentIndex = 0;
+    let attemptsLeft = 2;
+    let failedWords = [];
+    let locked = false;
+
+    const keyboardRows = [
+      ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
+      ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
+      ["z", "x", "c", "v", "b", "n", "m"],
+      ["Backspace", "Enter"]
+    ];
+
+    function showScreen(screen) {
+      [startScreen, gameScreen, endScreen].forEach(item => item.classList.remove("active"));
+      screen.classList.add("active");
+    }
+
+    function speakWord(word) {
+      if (!window.speechSynthesis) return;
+
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(word);
+      utterance.lang = "en-US";
+      utterance.rate = 0.82;
+      utterance.pitch = 1;
+
+      const voices = window.speechSynthesis.getVoices();
+      const englishVoice = voices.find(voice => voice.lang && voice.lang.toLowerCase().startsWith("en"));
+      if (englishVoice) utterance.voice = englishVoice;
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function normalize(text) {
+      return text.trim().toLowerCase();
+    }
+
+    function startGame() {
+      currentIndex = 0;
+      attemptsLeft = 2;
+      failedWords = [];
+      locked = false;
+      showScreen(gameScreen);
+      renderWord();
+    }
+
+    function renderWord() {
+      const current = verbs[currentIndex];
+      attemptsLeft = 2;
+      locked = false;
+
+      baseVerb.textContent = current.base;
+      answerInput.value = "";
+      answerInput.disabled = false;
+      answerInput.focus();
+
+      message.textContent = "";
+      message.className = "message";
+
+      progressText.textContent = `Word ${currentIndex + 1} / ${verbs.length}`;
+      attemptsText.textContent = `Attempts left: ${attemptsLeft}`;
+      progressFill.style.width = `${(currentIndex / verbs.length) * 100}%`;
+    }
+
+    function checkAnswer() {
+      if (locked) return;
+
+      const current = verbs[currentIndex];
+      const userAnswer = normalize(answerInput.value);
+      const correctAnswer = current.answer;
+
+      if (!userAnswer) {
+        setMessage("Type an answer first 💜", "bad");
+        shakeInput();
+        return;
+      }
+
+      if (userAnswer === correctAnswer) {
+        locked = true;
+        setMessage("Correct!", "good");
+        speakWord(current.speak || correctAnswer);
+        answerInput.disabled = true;
+        setTimeout(nextWord, 1150);
+        return;
+      }
+
+      attemptsLeft--;
+      attemptsText.textContent = `Attempts left: ${attemptsLeft}`;
+      shakeInput();
+
+      if (attemptsLeft > 0) {
+        setMessage("Not quite. Try one more time.", "bad");
+        answerInput.select();
+      } else {
+        locked = true;
+        failedWords.push(current);
+        setMessage(`Answer: ${correctAnswer}`, "answer");
+        answerInput.value = correctAnswer;
+        answerInput.disabled = true;
+        speakWord(current.speak || correctAnswer);
+        setTimeout(nextWord, 1800);
+      }
+    }
+
+    function nextWord() {
+      currentIndex++;
+      progressFill.style.width = `${(currentIndex / verbs.length) * 100}%`;
+
+      if (currentIndex >= verbs.length) {
+        finishGame();
+      } else {
+        renderWord();
+      }
+    }
+
+    function finishGame() {
+      showScreen(endScreen);
+      const correctCount = verbs.length - failedWords.length;
+      scoreText.textContent = `Result: ${correctCount} / ${verbs.length}`;
+
+      if (failedWords.length === 0) {
+        failedBlock.innerHTML = `<p class="empty-result">Perfect! No failed words ✨</p>`;
+      } else {
+        const listItems = failedWords
+          .map(item => `<li>${item.base} → ${item.answer}</li>`)
+          .join("");
+
+        failedBlock.innerHTML = `
+          <p class="subtitle" style="text-align:center; margin:0; max-width:none;">Words to practise again:</p>
+          <ul class="failed-list">${listItems}</ul>
+        `;
+      }
+    }
+
+    function setMessage(text, type) {
+      message.textContent = text;
+      message.className = `message ${type || ""}`;
+    }
+
+    function shakeInput() {
+      answerInput.classList.remove("shake");
+      void answerInput.offsetWidth;
+      answerInput.classList.add("shake");
+    }
+
+    function clearInput() {
+      if (locked) return;
+      answerInput.value = "";
+      answerInput.focus();
+    }
+
+    function addLetter(letter) {
+      if (locked) return;
+      answerInput.focus();
+      const start = answerInput.selectionStart;
+      const end = answerInput.selectionEnd;
+      const value = answerInput.value;
+      answerInput.value = value.slice(0, start) + letter + value.slice(end);
+      answerInput.selectionStart = answerInput.selectionEnd = start + 1;
+    }
+
+    function removeLetter() {
+      if (locked) return;
+      answerInput.focus();
+      const start = answerInput.selectionStart;
+      const end = answerInput.selectionEnd;
+      const value = answerInput.value;
+
+      if (start !== end) {
+        answerInput.value = value.slice(0, start) + value.slice(end);
+        answerInput.selectionStart = answerInput.selectionEnd = start;
+        return;
+      }
+
+      if (start > 0) {
+        answerInput.value = value.slice(0, start - 1) + value.slice(start);
+        answerInput.selectionStart = answerInput.selectionEnd = start - 1;
+      }
+    }
+
+    function createKeyboard() {
+      keyboard.innerHTML = "";
+
+      keyboardRows.forEach(row => {
+        const rowElement = document.createElement("div");
+        rowElement.className = "keyboard-row";
+
+        row.forEach(key => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.textContent = key;
+          button.className = "key";
+
+          if (key === "Backspace") button.classList.add("backspace", "wide");
+          if (key === "Enter") button.classList.add("enter", "wide");
+
+          button.addEventListener("click", () => {
+            if (key === "Backspace") removeLetter();
+            else if (key === "Enter") checkAnswer();
+            else addLetter(key);
+          });
+
+          rowElement.appendChild(button);
+        });
+
+        keyboard.appendChild(rowElement);
+      });
+    }
+
+    document.addEventListener("keydown", event => {
+      const gameIsActive = gameScreen.classList.contains("active");
+      if (!gameIsActive || locked) return;
+
+      if (event.key === "Enter") {
+        event.preventDefault();
+        checkAnswer();
+        return;
+      }
+
+      if (event.key === "Backspace") {
+        event.preventDefault();
+        removeLetter();
+        return;
+      }
+
+      const code = event.code;
+      if (/^Key[A-Z]$/.test(code)) {
+        event.preventDefault();
+        const letter = code.replace("Key", "").toLowerCase();
+        addLetter(letter);
+      }
+    });
+
+    answerInput.addEventListener("input", () => {
+      answerInput.value = answerInput.value.replace(/[^a-zA-Z]/g, "").toLowerCase();
+    });
+
+    startButton.addEventListener("click", startGame);
+    restartButton.addEventListener("click", startGame);
+    checkButton.addEventListener("click", checkAnswer);
+    clearButton.addEventListener("click", clearInput);
+
+    createKeyboard();
+
+    // Helps some browsers load available voices earlier.
+    if (window.speechSynthesis) {
+      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    }
+  </script>
+</body>
+</html>
