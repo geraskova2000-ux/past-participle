@@ -103,6 +103,49 @@
       box-shadow: 0 12px 30px rgba(124, 82, 160, 0.12);
     }
 
+    .name-card {
+      width: min(560px, 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      text-align: left;
+    }
+
+    .name-label {
+      font-size: 22px;
+      font-weight: 900;
+      color: #6d3fa5;
+      text-align: center;
+    }
+
+    .name-input {
+      width: 100%;
+      min-height: 62px;
+      border: 2px solid rgba(143, 94, 214, 0.25);
+      border-radius: 22px;
+      padding: 14px 20px;
+      font-size: 28px;
+      font-weight: 800;
+      text-align: center;
+      color: #5c3677;
+      outline: none;
+      background: rgba(255, 255, 255, 0.86);
+      box-shadow: 0 10px 22px rgba(124, 82, 160, 0.10);
+    }
+
+    .name-input:focus {
+      border-color: #a46be3;
+    }
+
+    .start-error {
+      min-height: 26px;
+      margin: 0;
+      font-size: 17px;
+      font-weight: 800;
+      color: #b55b77;
+      text-align: center;
+    }
+
     .start-notes {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -174,7 +217,8 @@
     }
 
     .progress-text,
-    .attempts-text {
+    .attempts-text,
+    .player-text {
       font-size: 18px;
       font-weight: 800;
       color: #7852a4;
@@ -453,12 +497,25 @@
         </div>
       </div>
 
+      <div class="soft-card name-card">
+        <label class="name-label" for="studentNameInput">What’s your name?</label>
+        <input
+          class="name-input"
+          id="studentNameInput"
+          type="text"
+          autocomplete="name"
+          placeholder="type your name"
+        />
+        <p class="start-error" id="startError"></p>
+      </div>
+
       <button class="main-button" id="startButton">Start game</button>
       <p class="small-hint">Tip: turn your sound on before you start.</p>
     </section>
 
     <section class="screen game-screen" id="gameScreen">
       <div class="top-bar">
+        <div class="player-text" id="playerText">Student: —</div>
         <div class="progress-text" id="progressText">Word 1 / 20</div>
         <div class="attempts-text" id="attemptsText">Attempts left: 2</div>
       </div>
@@ -503,6 +560,9 @@
   </main>
 
   <script>
+    const TRACKING_URL = "https://script.google.com/macros/s/AKfycbze5szpz0ury7t9AzXgypraI0bqWnb_beGCryE4gfIZTJ8y7giHTQP54U3Mqy6PtOh-Cg/exec";
+    const GAME_NAME = "Past Participle Game";
+
     const verbs = [
       { base: "see", answer: "seen" },
       { base: "read", answer: "read", speak: "red" },
@@ -532,11 +592,14 @@
 
     const startButton = document.getElementById("startButton");
     const restartButton = document.getElementById("restartButton");
+    const studentNameInput = document.getElementById("studentNameInput");
+    const startError = document.getElementById("startError");
     const baseVerb = document.getElementById("baseVerb");
     const answerInput = document.getElementById("answerInput");
     const checkButton = document.getElementById("checkButton");
     const clearButton = document.getElementById("clearButton");
     const message = document.getElementById("message");
+    const playerText = document.getElementById("playerText");
     const progressText = document.getElementById("progressText");
     const attemptsText = document.getElementById("attemptsText");
     const progressFill = document.getElementById("progressFill");
@@ -544,6 +607,7 @@
     const scoreText = document.getElementById("scoreText");
     const failedBlock = document.getElementById("failedBlock");
 
+    let studentName = "";
     let currentIndex = 0;
     let attemptsLeft = 2;
     let failedWords = [];
@@ -581,7 +645,41 @@
       return text.trim().toLowerCase();
     }
 
+    function logVisit(page) {
+      if (!studentName) return;
+
+      const data = new URLSearchParams();
+      data.append("name", studentName);
+      data.append("game", GAME_NAME);
+      data.append("page", page);
+
+      fetch(TRACKING_URL, {
+        method: "POST",
+        mode: "no-cors",
+        body: data
+      }).catch(() => {
+        // The game should keep working even if the visit log does not send.
+      });
+    }
+
     function startGame() {
+      const typedName = studentNameInput.value.trim();
+
+      if (!typedName) {
+        startError.textContent = "Type your name first 💜";
+        studentNameInput.focus();
+        studentNameInput.classList.remove("shake");
+        void studentNameInput.offsetWidth;
+        studentNameInput.classList.add("shake");
+        return;
+      }
+
+      studentName = typedName;
+      startError.textContent = "";
+      playerText.textContent = `Student: ${studentName}`;
+
+      logVisit("Game started");
+
       currentIndex = 0;
       attemptsLeft = 2;
       failedWords = [];
@@ -663,6 +761,7 @@
       showScreen(endScreen);
       const correctCount = verbs.length - failedWords.length;
       scoreText.textContent = `Result: ${correctCount} / ${verbs.length}`;
+      logVisit(`Game finished: ${correctCount} / ${verbs.length}`);
 
       if (failedWords.length === 0) {
         failedBlock.innerHTML = `<p class="empty-result">Perfect! No failed words ✨</p>`;
@@ -783,6 +882,13 @@
 
     startButton.addEventListener("click", startGame);
     restartButton.addEventListener("click", startGame);
+
+    studentNameInput.addEventListener("keydown", event => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        startGame();
+      }
+    });
     checkButton.addEventListener("click", checkAnswer);
     clearButton.addEventListener("click", clearInput);
 
